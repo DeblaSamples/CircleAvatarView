@@ -24,11 +24,18 @@ import java.util.concurrent.Executors;
  */
 public class AvatarView extends View {
 
-    private       float           mRotate             = 0;
-    private final float           mRotateInterval     = 1f;
-    private       Paint           mStrokePaint        = null;
-    private       Drawable        mAvatarImage        = null;
-    private       ExecutorService mAvatarClipExceutor = Executors.newSingleThreadExecutor();
+    private       float           mStrokeRotate         = 0;
+    private       float           mFocusARotate         = 0;
+    private       float           mFocusBRotate         = 0;
+    private       int             mStrokeColor          = 0xFFFFFFFF;
+    private       int             mCircleAColor         = 0xFFFFFF00;
+    private       int             mCircleBColor         = 0xFF00FFFF;
+    private final float           mStrokeRotateInterval = +1.0f;
+    private final float           mFocusARotateInterval = +3.5f;
+    private final float           mFocusBRotateInterval = -2.5f;
+    private       Paint           mStrokePaint          = null;
+    private       Drawable        mAvatarImage          = null;
+    private       ExecutorService mAvatarClipExceutor   = Executors.newSingleThreadExecutor();
 
     public AvatarView(Context context) {
         this(context, null);
@@ -108,33 +115,83 @@ public class AvatarView extends View {
     protected void onDraw(Canvas canvas) {
         super.onDraw(canvas);
 
-        float viewWidth         = getWidth();
-        float viewHeight        = getHeight();
-        float limitWidth        = viewWidth * 0.8f;
-        float limitHeight       = viewHeight * 0.8f;
-        float avatorWidth       = mAvatarImage != null ? mAvatarImage.getIntrinsicWidth() : 0;
-        float avatorHeight      = mAvatarImage != null ? mAvatarImage.getIntrinsicHeight() : 0;
-        float scale             = computeImageScale(avatorWidth, avatorHeight, limitWidth, limitHeight);
-        float avatorScaleWidth  = avatorWidth * scale;
-        float avatorScaleHeight = avatorHeight * scale;
-        float coverSize         = Math.min(avatorScaleWidth, avatorScaleHeight);
-        float strokeWidth       = coverSize * 0.02f;
+        float viewWidth          = getWidth();
+        float viewHeight         = getHeight();
+        float limitWidth         = viewWidth * 0.8f;
+        float limitHeight        = viewHeight * 0.8f;
+        float centerX            = viewWidth * 0.5f;
+        float centerY            = viewHeight * 0.5f;
+        float avatorWidth        = mAvatarImage != null ? mAvatarImage.getIntrinsicWidth() : 0;
+        float avatorHeight       = mAvatarImage != null ? mAvatarImage.getIntrinsicHeight() : 0;
+        float scale              = computeImageScale(avatorWidth, avatorHeight, limitWidth, limitHeight);
+        float avatorScaleWidth   = avatorWidth * scale;
+        float avatorScaleHeight  = avatorHeight * scale;
+        float coverSize          = Math.min(avatorScaleWidth, avatorScaleHeight);
+        float strokeWidth        = coverSize * 0.02f;
+        float focusCircleARadius = coverSize * 0.8f * 0.5f;
+        float focusCircleBRadius = coverSize * 0.6f * 0.5f;
 
         if (mAvatarImage != null) {
+
+            // Draw avatar
             canvas.save();
             canvas.translate((viewWidth - avatorScaleWidth) * 0.5f, (viewHeight - avatorScaleHeight) * 0.5f);
             canvas.scale(scale, scale);
-
-            canvas.rotate(mRotate, avatorWidth * 0.5f, avatorHeight * 0.5f);
+            canvas.rotate(mStrokeRotate, avatorWidth * 0.5f, avatorHeight * 0.5f);
             mAvatarImage.draw(canvas);
             canvas.restore();
 
+            // Draw Stroke
+            canvas.save();
             mStrokePaint.setStrokeWidth(strokeWidth);
             mStrokePaint.setStyle(Paint.Style.STROKE);
-            canvas.drawCircle(viewWidth * 0.5f, viewHeight * 0.5f, (coverSize - strokeWidth * 0.5f) * 0.5f, mStrokePaint);
+            mStrokePaint.setColor(mStrokeColor);
+            canvas.drawCircle(centerX, centerY, (coverSize - strokeWidth * 0.5f) * 0.5f, mStrokePaint);
+
+            // Draw Circle A
+            mStrokePaint.setColor(mCircleAColor);
+            canvas.rotate(mFocusARotate, centerX, centerY);
+            canvas.drawArc(
+                    centerX - focusCircleARadius,
+                    centerY - focusCircleARadius,
+                    centerX + focusCircleARadius,
+                    centerY + focusCircleARadius,
+                    0, 90, false, mStrokePaint);
+            canvas.drawArc(
+                    centerX - focusCircleARadius,
+                    centerY - focusCircleARadius,
+                    centerX + focusCircleARadius,
+                    centerY + focusCircleARadius,
+                    180, 90, false, mStrokePaint);
+            canvas.drawCircle(
+                    centerX, centerY,
+                    (focusCircleARadius * 2f - strokeWidth * 1.5f) * 0.5f, mStrokePaint);
+
+            // Draw Circle B
+            mStrokePaint.setColor(mCircleBColor);
+            canvas.rotate(mFocusBRotate - mFocusARotate, centerX, centerY);
+            canvas.drawArc(
+                    centerX - focusCircleBRadius,
+                    centerY - focusCircleBRadius,
+                    centerX + focusCircleBRadius,
+                    centerY + focusCircleBRadius,
+                    90, 90, false, mStrokePaint);
+            canvas.drawArc(
+                    centerX - focusCircleBRadius,
+                    centerY - focusCircleBRadius,
+                    centerX + focusCircleBRadius,
+                    centerY + focusCircleBRadius,
+                    270, 90, false, mStrokePaint);
+            canvas.drawCircle(
+                    centerX, centerY,
+                    (focusCircleBRadius * 2f - strokeWidth * 1.5f) * 0.5f, mStrokePaint);
+
+            canvas.restore();
         }
 
-        mRotate += mRotateInterval;
+        mFocusARotate += mFocusARotateInterval;
+        mFocusBRotate += mFocusBRotateInterval;
+        mStrokeRotate += mStrokeRotateInterval;
         invalidate();
     }
 
